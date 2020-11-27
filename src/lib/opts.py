@@ -63,11 +63,16 @@ class opts(object):
     self.parser.add_argument('--save_imgs', default='', help='')
     self.parser.add_argument('--save_img_suffix', default='', help='')
     self.parser.add_argument('--skip_first', type=int, default=-1, help='')
-    self.parser.add_argument('--save_video', action='store_true')
-    self.parser.add_argument('--save_framerate', type=int, default=30)
+    self.parser.add_argument('--save_debug_frame', action='store_true', help='Save frames as images for debug')
+    self.parser.add_argument('--save_video', action='store_true', help='Save video with the bounding boxes')
+    self.parser.add_argument('--save_root', type=str, default='', help='The destination of the output video')
+    self.parser.add_argument('--save_framerate', type=int, default=30)  # Why does this have a default...
     self.parser.add_argument('--resize_video', action='store_true')
-    self.parser.add_argument('--video_h', type=int, default=512, help='')
-    self.parser.add_argument('--video_w', type=int, default=512, help='')
+    self.parser.add_argument('--video_h', type=int, default=0, help='If use the default value, '
+                                                                    'then use the original height of the video')
+    self.parser.add_argument('--video_w', type=int, default=0, help='If use the default value, '
+                                                                    'then use the original width of the video')
+    self.parser.add_argument('--video_name', type=str, default='demo.mp4', help='Name of the output video')
     self.parser.add_argument('--transpose_video', action='store_true')
     self.parser.add_argument('--show_track_color', action='store_true')
     self.parser.add_argument('--not_show_bbox', action='store_true')

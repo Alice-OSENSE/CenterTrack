@@ -10,6 +10,8 @@ import cv2
 import json
 import copy
 import numpy as np
+from pathlib import Path
+
 from opts import opts
 from detector import Detector
 
@@ -17,6 +19,18 @@ from detector import Detector
 image_ext = ['jpg', 'jpeg', 'png', 'webp']
 video_ext = ['mp4', 'mov', 'avi', 'mkv']
 time_stats = ['tot', 'load', 'pre', 'net', 'dec', 'post', 'merge', 'display']
+
+# called if save_path is not vid_path
+def get_new_video_writer(save_path, vid_writer=None, vid_cap=None):
+    if isinstance(vid_writer, cv2.VideoWriter):
+        vid_writer.release()  # release previous video writer
+
+    fourcc = 'mp4v'  # output video codec
+    fps = vid_cap.get(cv2.CAP_PROP_FPS)
+
+    w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    return cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*fourcc), fps, (w, h))
 
 def demo(opt):
   os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
@@ -28,6 +42,13 @@ def demo(opt):
     is_video = True
     # demo on video stream
     cam = cv2.VideoCapture(0 if opt.demo == 'webcam' else opt.demo)
+    w = cam.get(cv2.CAP_PROP_FRAME_WIDTH)
+    h = cam.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+    if opt.video_w and opt.video_h:
+        w = opt.video_w
+        h = opt.video_h
+
   else:
     is_video = False
     # Demo on images sequences
@@ -45,13 +66,16 @@ def demo(opt):
   out = None
   out_name = opt.demo[opt.demo.rfind('/') + 1:]
   print('out_name', out_name)
-  if opt.save_video:
-    # fourcc = cv2.VideoWriter_fourcc(*'XVID')
+
+  # Initialize video writer
+  if (opt.demo == 'webcam'
+      or opt.demo[opt.demo.rfind('.') + 1:].lower() in video_ext) \
+      and opt.save_video:
     fourcc = cv2.VideoWriter_fourcc(*'H264')
     out = cv2.VideoWriter('../results/{}.mp4'.format(
-      opt.exp_id + '_' + out_name),fourcc, opt.save_framerate, (
-        opt.video_w, opt.video_h))
-  
+      opt.exp_id + '_' + out_name), fourcc, cam.get(cv2.CAP_PROP_FPS), (
+      w, h))
+
   if opt.debug < 5:
     detector.pause = False
   cnt = 0
@@ -71,7 +95,7 @@ def demo(opt):
 
       # resize the original video for saving video results
       if opt.resize_video:
-        img = cv2.resize(img, (opt.video_w, opt.video_h))
+        img = cv2.resize(img, (w, h))
 
       # skip the first X frames of the video
       if cnt < opt.skip_first:
@@ -93,10 +117,12 @@ def demo(opt):
       results[cnt] = ret['results']
 
       # save debug image to video
-      if opt.save_video:
-        out.write(ret['generic'])
+      if opt.save_debug_frame:
         if not is_video:
           cv2.imwrite('../results/demo{}.jpg'.format(cnt), ret['generic'])
+
+      if opt.save_video:
+        out.write(ret['results'])
       
       # esc to quit and finish saving video
       if cv2.waitKey(1) == 27:
