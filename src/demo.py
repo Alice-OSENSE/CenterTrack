@@ -44,8 +44,9 @@ def demo(opt):
     cam = cv2.VideoCapture(0 if opt.demo == 'webcam' else opt.demo)
     w = cam.get(cv2.CAP_PROP_FRAME_WIDTH)
     h = cam.get(cv2.CAP_PROP_FRAME_HEIGHT)
-
-    if opt.video_w and opt.video_h:
+    print(w)
+    print(h)
+    if opt.video_w != 0 and opt.video_h != 0:
         w = opt.video_w
         h = opt.video_h
 
@@ -69,12 +70,12 @@ def demo(opt):
 
   # Initialize video writer
   if (opt.demo == 'webcam'
-      or opt.demo[opt.demo.rfind('.') + 1:].lower() in video_ext) \
-      and opt.save_video:
+      or opt.demo[opt.demo.rfind('.') + 1:].lower() in video_ext) and opt.save_video:
     fourcc = cv2.VideoWriter_fourcc(*'H264')
-    out = cv2.VideoWriter('../results/{}.mp4'.format(
-      opt.exp_id + '_' + out_name), fourcc, cam.get(cv2.CAP_PROP_FPS), (
-      w, h))
+    fps = cam.get(cv2.CAP_PROP_FPS)
+    video_path = str(Path(opt.save_root) / "result.mp4")
+    size = (int(w), int(h))
+    out = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
 
   if opt.debug < 5:
     detector.pause = False
@@ -122,7 +123,8 @@ def demo(opt):
           cv2.imwrite('../results/demo{}.jpg'.format(cnt), ret['generic'])
 
       if opt.save_video:
-        out.write(ret['results'])
+        # print(type(ret['generic']))
+        out.write(ret['generic'])
       
       # esc to quit and finish saving video
       if cv2.waitKey(1) == 27:
@@ -137,6 +139,8 @@ def save_and_exit(opt, out=None, results=None, out_name=''):
     print('saving results to', save_dir)
     json.dump(_to_list(copy.deepcopy(results)), 
               open(save_dir, 'w'))
+
+  # Release the capture
   if opt.save_video and out is not None:
     out.release()
   sys.exit(0)
